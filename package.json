@@ -1,0 +1,33 @@
+{
+  "name": "cordova-print",
+  "version": "2.0.0",
+  "description": "Print on a Zebra Printer",
+  "cordova": {
+    "id": "com.silverchip.cordovaprinter",
+    "platforms": [
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LiamBateman/cordova-print.git"
+  },
+  "keywords": [
+    "zebra"
+  ],
+  "author": "Liam Bateman",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/LiamBateman/cordova-print/issues"
+  },
+  "homepage": "https://github.com/LiamBateman/cordova-print",
+  "dependencies": {
+   
+  },
+  "scripts": {
+   
+  },
+  "devDependencies": {
+    
+  }
+}
