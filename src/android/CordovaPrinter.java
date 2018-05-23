@@ -1,4 +1,4 @@
-package com.example.plugin;
+package com.silverchip;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;

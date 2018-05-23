@@ -52,12 +52,12 @@
     <platform name="android">
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="CordovaPrinter">
-                <param name="CordovaPrinter" value="CordovaPrinter"/>
+                <param name="android-package" value="com.silverchip.CordovaPrinter"/>
             </feature>
         </config-file>
 
         <source-file src="src/android/ZSDK_ANDROID_API.jar" target-dir="app/libs" />
-        <source-file src="src/android/CordovaPrinter.java" target-dir="src/com/example/plugin/"/>
+        <source-file src="src/android/CordovaPrinter.java" target-dir="src/com/silverchip/"/>
     </platform>
 
 </plugin>
