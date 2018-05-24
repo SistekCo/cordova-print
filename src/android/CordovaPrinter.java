@@ -14,7 +14,9 @@ import com.zebra.sdk.printer.ZebraPrinterFactory;
 import com.zebra.sdk.printer.ZebraPrinterLanguageUnknownException;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -33,118 +35,126 @@ public class CordovaPrinter extends CordovaPlugin {
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
 
-        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (mBluetoothAdapter == null) {
-            // Device does not support Bluetooth
-            callbackContext.error("The device you are using does not support bluetooth.");
-        }else{
-            String bluetoothNotEnabledError = "Bluetooth is not enabled.";
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                if (mBluetoothAdapter == null) {
+                    // Device does not support Bluetooth
+                    callbackContext.error("The device you are using does not support bluetooth.");
+                }else{
+                    String bluetoothNotEnabledError = "Bluetooth is not enabled.";
 
-            switch (action){
-                case "cordovaGetPrinters":
+                    switch (action){
+                        case "cordovaGetPrinters":
 
-                    if (!mBluetoothAdapter.isEnabled()){
-                        callbackContext.error(bluetoothNotEnabledError);
-                    }else{
-                        List<String> retDevices = new ArrayList<String>();
+                            if (!mBluetoothAdapter.isEnabled()){
+                                callbackContext.error(bluetoothNotEnabledError);
+                            }else{
+                                List<String> retDevices = new ArrayList<String>();
 
-                        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-                        for(BluetoothDevice bt : pairedDevices)
-                        {
-                            // Check if the signature of this device is consistent with zebra printers
-                            BluetoothClass btClass = bt.getBluetoothClass();
+                                Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+                                for(BluetoothDevice bt : pairedDevices)
+                                {
+                                    // Check if the signature of this device is consistent with zebra printers
+                                    BluetoothClass btClass = bt.getBluetoothClass();
 
-                            if (
-                                    btClass.getMajorDeviceClass() == BluetoothClass.Device.Major.IMAGING &&
-                                            btClass.getDeviceClass() == 1664 &&
-                                            btClass.hasService(BluetoothClass.Service.NETWORKING) &&
-                                            btClass.hasService(BluetoothClass.Service.RENDER)
-                                    ){
+                                    if (
+                                            btClass.getMajorDeviceClass() == BluetoothClass.Device.Major.IMAGING &&
+                                                    btClass.getDeviceClass() == 1664 &&
+                                                    btClass.hasService(BluetoothClass.Service.NETWORKING) &&
+                                                    btClass.hasService(BluetoothClass.Service.RENDER)
+                                            ){
 
-                                //Signature match!
+                                        //Signature match!
 
-                                String btName = bt.getName();
-                                String btAddress = bt.getAddress();
+                                        String btName = bt.getName();
+                                        String btAddress = bt.getAddress();
 
-                                Connection connection = new BluetoothConnection(btAddress);
+                                        Connection connection = new BluetoothConnection(btAddress);
 
-                                try {
-                                    connection.open();
-                                    ZebraPrinter printer = ZebraPrinterFactory.getInstance(connection);
+                                        try {
+                                            connection.open();
 
-                                    connection.close();
+                                            ZebraPrinter printer = ZebraPrinterFactory.getInstance(connection);
 
-                                    retDevices.add(btName);
-                                } catch (ConnectionException e) {
-                                    // Error is either due to bluetooth not being enabled, or device not being within range (or currently rejecting connections)
+                                            connection.close();
 
-                                } catch (ZebraPrinterLanguageUnknownException e) {
-                                    // Error is expected if the device is not a zebra printer.
+                                            retDevices.add(btName);
+                                        } catch (ConnectionException e) {
+                                            // Error is either due to bluetooth not being enabled, or device not being within range (or currently rejecting connections)
 
-                                } catch (Exception e) {
-                                    // Unknown error.
+                                        } catch (ZebraPrinterLanguageUnknownException e) {
+                                            // Error is expected if the device is not a zebra printer.
 
+                                        } catch (Exception e) {
+                                            // Unknown error.
+
+                                        }
+                                    }
                                 }
+
+                                callbackContext.success(TextUtils.join(",", retDevices));
                             }
-                        }
 
-                        callbackContext.success(TextUtils.join(",", retDevices));
-                    }
+                            break;
+                        case "cordovaPrint":
 
-                    break;
-                case "cordovaPrint":
-
-                    if (!mBluetoothAdapter.isEnabled()){
-                        callbackContext.error(bluetoothNotEnabledError);
-                    }else{
-                        String labelData = data.getString(0);
-                        String serialNumber = data.getString(1);
-
-                        // Find our printer in the paired devices list
-                        BluetoothDevice matchedDevice = getMatchedDevice(mBluetoothAdapter, serialNumber);
-
-
-                        if (matchedDevice == null){
-                            callbackContext.error("The selected printer is no longer paired.");
-                        }else{
-                            new Thread(() -> {
-                                Looper.prepare();
-
-                                Connection connection = new BluetoothConnection(matchedDevice.getAddress());
+                            if (!mBluetoothAdapter.isEnabled()){
+                                callbackContext.error(bluetoothNotEnabledError);
+                            }else{
 
                                 try {
-                                    connection.open();
-                                    ZebraPrinter printer = ZebraPrinterFactory.getInstance(connection);
-                                    printer.sendCommand(labelData);
+                                    String labelData = data.getString(0);
+                                    String serialNumber = data.getString(1);
 
-                                    connection.close();
+                                    // Find our printer in the paired devices list
+                                    BluetoothDevice matchedDevice = getMatchedDevice(mBluetoothAdapter, serialNumber);
+                                    String btAddress = matchedDevice.getAddress();
 
-                                    callbackContext.success("OK");
-                                } catch (ConnectionException e) {
-                                    // Error is either due to bluetooth not being enabled, or device not being within range (or currently rejecting connections)
 
-                                    callbackContext.error("Bluetooth is not enabled, or the device is not in range.");
-                                } catch (ZebraPrinterLanguageUnknownException e) {
-                                    // Error is expected if the device is not a zebra printer.
+                                    if (matchedDevice == null){
+                                        callbackContext.error("The selected printer is no longer paired.");
+                                    }else{
 
-                                    callbackContext.error("Unknown Error: ERR-ZPLUE");
-                                } catch (Exception e) {
-                                    // Unknown error.
+                                        Connection connection = new BluetoothConnection(btAddress);
 
-                                    callbackContext.error("Unknown Error: ERR-UNK");
+                                        try {
+                                            connection.open();
+
+                                            ZebraPrinter printer = ZebraPrinterFactory.getInstance(connection);
+                                            printer.sendCommand(labelData);
+
+                                            connection.close();
+
+                                            callbackContext.success("OK");
+                                        } catch (ConnectionException e) {
+                                            // Error is either due to bluetooth not being enabled, or device not being within range (or currently rejecting connections)
+
+                                            callbackContext.error("Bluetooth is not enabled, or the device is not in range.");
+                                        } catch (ZebraPrinterLanguageUnknownException e) {
+                                            // Error is expected if the device is not a zebra printer.
+
+                                            callbackContext.error("Unknown Error: ERR-ZPLUE");
+                                        } catch (Exception e) {
+                                            // Unknown error.
+
+                                            callbackContext.error("Unknown Error: ERR-UNK");
+                                        }
+                                    }
+
+                                } catch (JSONException ignored) {
+                                    callbackContext.error("Unknown Error: ERR-JSONEX");
                                 }
 
-                                Looper.loop();
-                                Looper.myLooper().quit();
-                            }).start();
-                        }
-                    }
+                            }
 
-                    break;
-                default:
-                    return false;
+                            break;
+                    }
+                }
             }
-        }
+        });
+
         return true;
     }
 
@@ -152,7 +162,9 @@ public class CordovaPrinter extends CordovaPlugin {
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
         for(BluetoothDevice bt : pairedDevices)
         {
-            if (bt.getName().equals(serialNumber)){
+            String myName = bt.getName();
+
+            if (myName.equals(serialNumber)){
                 return bt;
             }
         }
