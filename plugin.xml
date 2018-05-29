@@ -3,8 +3,8 @@
     <engines>
         <engine name="cordova" version="&gt;=3.4.0" />
     </engines>
-    <js-module src="www/printer.js" name="print">
-        <clobbers target="window.plugins.print" />
+    <js-module src="www/cordovaPrint.js" name="cordovaPrint">
+        <clobbers target="cordovaPrint" />
     </js-module>
     <name>CordovaPrinter</name>
     <description>Print on a Zebra Printer</description>
