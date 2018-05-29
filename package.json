@@ -1,6 +1,6 @@
 {
   "name": "cordova-print",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Print on a Zebra Printer",
   "cordova": {
     "id": "com.silverchip.cordovaprinter",

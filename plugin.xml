@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="com.silverchip.cordovaprinter" version="3.0.0">
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="com.silverchip.cordovaprinter" version="3.1.0">
     <engines>
         <engine name="cordova" version="&gt;=3.4.0" />
     </engines>
-    <js-module src="www/cordovaPrint.js" name="cordovaPrint">
-        <clobbers target="cordovaPrint" />
+
+    <asset src="www/cordovaprint.js" target="js/cordovaprint.js"/>
+    <js-module src="www/cordovaprint.js" name="cordovaprint">
+        <clobbers target="cordovaprint" />
     </js-module>
+
     <name>CordovaPrinter</name>
     <description>Print on a Zebra Printer</description>
     <author>Silverchip</author>
